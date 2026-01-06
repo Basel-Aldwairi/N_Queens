@@ -2,6 +2,7 @@ import numpy as np
 import copy
 import random
 import cv2
+from pathlib import Path
 
 
 def count_attacking(board):
@@ -180,11 +181,9 @@ def n_queens_min_conflicts(N, max_depth=1000, max_restarts=100):
     return False, expanded_nodes
 
 
-def place_on_board(board_array, h=800, w=800):
+def draw_board(board_array, h=800, w=800):
     N = len(board_array)
     board_array = N - 1 - board_array
-
-    board = np.zeros((h, w), dtype=np.uint8)
 
     board = np.zeros((h, w), dtype=np.uint8)
 
@@ -193,21 +192,28 @@ def place_on_board(board_array, h=800, w=800):
     for row in range(N):
         for col in range(N):
             if (row + col) % 2 == 0:
-                board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)] = 128
+                board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)] = 158
 
-    queen_path = '../data/queen.png'
+    Root = Path(__file__).parent.parent
+
+    queen_path = Root / 'data' / 'queen.png'
     queen = cv2.imread(queen_path)
     queen = cv2.cvtColor(queen, cv2.COLOR_BGR2GRAY)
-    _, queen = cv2.threshold(queen, 128, 255, cv2.THRESH_BINARY)
-    queen = cv2.resize(queen, (box_h, box_w))
 
-    mask = queen < 255
+
+
+    queen = cv2.resize(queen, (box_h, box_w))
+    _, queen = cv2.threshold(queen, 128, 255, cv2.THRESH_BINARY)
+    queen = cv2.bitwise_not(queen)
 
     placed_board = board.copy()
 
     for col, row in enumerate(board_array):
-        placed_board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)][mask] = queen[mask]
+        board_location = board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)]
+        placed_board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)] = cv2.bitwise_or(board_location,
+                                                                                                     queen)
+        # placed_board[box_h * row:box_h * (row + 1), box_w * col:box_w * (col + 1)][mask] = queen[mask]
 
-    _, board_preprocessed = cv2.threshold(placed_board, 0, 255, cv2.THRESH_BINARY)
+    # _, board_preprocessed = cv2.threshold(placed_board, 0, 255, cv2.THRESH_BINARY)
 
-    return board_preprocessed
+    return placed_board
